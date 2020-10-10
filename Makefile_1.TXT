@@ -1,0 +1,10 @@
+Stack.exe: Stack_main.o Stack_Functions.o Log_functions.o Stack_Unit_Tests.o
+	g++ Stack_main.o Stack_Functions.o Log_functions.o Stack_Unit_Tests.o Stack.h -o Stack.exe
+Stack_main.o: Stack_main.cpp
+	g++ -c Stack_main.cpp
+Stack_Functions.o: Stack_Functions.cpp
+	g++ -c Stack_Functions.cpp
+Log_functions.o: Log_functions.cpp
+	g++ -c Log_functions.cpp
+Stack_Unit_Tests.o: Stack_Unit_Tests.cpp
+	g++ -c Stack_Unit_Tests.cpp
