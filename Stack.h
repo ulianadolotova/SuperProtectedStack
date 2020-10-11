@@ -47,7 +47,9 @@ enum errors
 
     CANARY_DATA_1_DEAD  = 13,
 
-    CANARY_DATA_2_DEAD  = 14
+    CANARY_DATA_2_DEAD  = 14,
+
+    HASH_INCORRECT      = 15
 };
 
 const size_t INCREASE_FACTOR = 2;
@@ -62,6 +64,7 @@ const unsigned long long CANARY_2 = 0xABCC0FFEE;
 
 struct Stack_t
 {
+    long long int      hash_value_;
     unsigned long long canary_begin_;
     size_t  size_;
     size_t  capacity_;
@@ -70,23 +73,29 @@ struct Stack_t
 };
 
 
-Stack_t* StackConstruct (size_t capacity);
+Stack_t* StackConstruct  (size_t capacity);
 
-error_t  StackDestruct  (Stack_t* pointer);
+error_t  StackDestruct   (Stack_t* pointer);
 
-error_t  StackResize    (Stack_t* pointer, size_t resize_factor, size_t mode);
+error_t  StackResize     (Stack_t* pointer, size_t resize_factor, size_t mode);
 
-error_t  StackPush      (Stack_t* pointer, double elem);
+error_t  StackPush       (Stack_t* pointer, double elem);
 
-double   StackPop       (Stack_t* pointer);
+double   StackPop        (Stack_t* pointer);
 
-error_t  Stack_OK       (Stack_t* pointer);
+error_t  Stack_OK        (Stack_t* pointer);
 
-error_t  Stack_Dump     (Stack_t* pointer);
+error_t  Stack_Dump      (Stack_t* pointer);
 
-void     PoisonSpace    (double* begin, double* end);
+void     PoisonSpace     (double* begin, double* end);
 
-double*  DataConstruct  (size_t capacity);
+double*  DataConstruct   (size_t capacity);
+
+
+long long int HashCounter(void* pointer_begin, void* pointer_end);
+void          HashUpdate (Stack_t* pointer);
+error_t       HashCheck  (Stack_t* pointer);
+
 
 void     Stack_Unit_Tests (void);
 void     StackPush_Test   (void);

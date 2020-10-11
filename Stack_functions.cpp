@@ -15,6 +15,7 @@ Stack_t* StackConstruct (size_t capacity)
 
     assert (pointer);
 
+    pointer->hash_value_   = 0;
     pointer->canary_begin_ = CANARY_1;
     pointer->data_         = DataConstruct (capacity);
     pointer->size_         = 0;
@@ -23,6 +24,7 @@ Stack_t* StackConstruct (size_t capacity)
 
     PoisonSpace (pointer->data_, pointer->data_ + pointer->capacity_);
 
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
 
     return pointer;
@@ -40,8 +42,6 @@ Stack_t* StackConstruct (size_t capacity)
 //----------------------------------------------------------------------------------
 error_t StackDestruct (Stack_t* pointer)
 {
-    ASSERT_OK(pointer)
-
     PoisonSpace (pointer->data_, pointer->data_ + pointer->capacity_);
 
     free ((char*) pointer->data_ - sizeof (unsigned long long));
@@ -73,6 +73,7 @@ error_t StackDestruct (Stack_t* pointer)
 //-------------------------------------------------------------------------------------
 error_t StackResize (Stack_t* pointer, size_t resize_factor, size_t mode)
 {
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
 
     if (mode == INCREASE)
@@ -93,6 +94,7 @@ error_t StackResize (Stack_t* pointer, size_t resize_factor, size_t mode)
         size_t capacity_new = pointer->capacity_;
         PoisonSpace (pointer->data_ + capacity_old, pointer->data_ + capacity_new);
 
+        HashUpdate (pointer);
         ASSERT_OK(pointer);
 
         return OK;
@@ -113,6 +115,7 @@ error_t StackResize (Stack_t* pointer, size_t resize_factor, size_t mode)
 
          *((unsigned long long*) (pointer->data_ + pointer->capacity_)) = CANARY_2;
 
+        HashUpdate (pointer);
         ASSERT_OK(pointer)
 
         return OK;
@@ -120,6 +123,7 @@ error_t StackResize (Stack_t* pointer, size_t resize_factor, size_t mode)
 
     else
     {
+        HashUpdate (pointer);
         ASSERT_OK(pointer)
 
         return INCORRECT_MODE;
@@ -139,6 +143,7 @@ error_t StackResize (Stack_t* pointer, size_t resize_factor, size_t mode)
 //--------------------------------------------------------------------------------------
 error_t StackPush (Stack_t* pointer, double elem)
 {
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
 
     if (pointer->size_ == pointer->capacity_)
@@ -149,8 +154,8 @@ error_t StackPush (Stack_t* pointer, double elem)
     assert (pointer->size_ < pointer->capacity_);
     pointer->data_[pointer->size_++] = elem;
 
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
-
 
     return (pointer->data_[pointer->size_ - 1] == elem) ? OK : INCORRECT_PUSH;
 
@@ -167,6 +172,7 @@ error_t StackPush (Stack_t* pointer, double elem)
 //--------------------------------------------------------------------------------------
 double StackPop (Stack_t* pointer)
 {
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
 
     double elem = pointer->data_[--pointer->size_];
@@ -178,6 +184,7 @@ double StackPop (Stack_t* pointer)
         StackResize (pointer, RESIZE_FACTOR, DECREASE);
     }
 
+    HashUpdate (pointer);
     ASSERT_OK(pointer)
 
     return elem;

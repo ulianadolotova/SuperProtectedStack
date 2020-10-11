@@ -12,6 +12,11 @@
 //---------------------------------------------------------------------------------
 error_t Stack_OK (Stack_t* pointer)
 {
+    if (HashCheck (pointer) != OK)
+    {
+        return HASH_INCORRECT;
+    }
+
     if (pointer->canary_begin_ != CANARY_1)
     {
         return CANARY_BEGIN_DEAD;
@@ -86,69 +91,75 @@ error_t Stack_Dump (Stack_t* pointer)
 
     switch (result)
     {
-        case (0):
+        case (OK):
         {
             error = "OK";
             break;
         }
 
-        case (1):
+        case (STACK_EMPTY):
         {
             error = "STACK_EMPTY";
             break;
         }
 
-        case (2):
+        case (POINTER_STRUCT_NULL):
         {
             error = "POINTER_STRUCT_NULL";
             break;
         }
 
-        case (3):
+        case (POINTER_DATA_NULL):
         {
             error = "POINTER_DATA_NULL";
             break;
         }
 
-        case (4):
+        case (CAPACITY_LESS_SIZE):
         {
             error = "CAPACITY_LESS_SIZE";
             break;
         }
 
-        case (8):
+        case (CAPACITY_EMPTY):
         {
             error = "CAPACITY_EMPTY";
             break;
         }
 
-        case (9):
+        case (ELEM_IS_NAN):
         {
             error = "ELEM_IS_NAN";
             break;
         }
 
-        case (11):
+        case (CANARY_BEGIN_DEAD):
         {
             error = "CANARY_BEGIN_DEAD";
             break;
         }
 
-        case (12):
+        case (CANARY_END_DEAD):
         {
             error = "CANARY_END_DEAD";
             break;
         }
 
-        case (13):
+        case (CANARY_DATA_1_DEAD):
         {
             error = "CANARY_DATA_1_DEAD";
             break;
         }
 
-        case (14):
+        case (CANARY_DATA_2_DEAD):
         {
             error = "CANARY_DATA_2_DEAD";
+            break;
+        }
+
+        case (HASH_INCORRECT):
+        {
+            error = "HASH_INCORRECT";
             break;
         }
 
@@ -165,11 +176,19 @@ error_t Stack_Dump (Stack_t* pointer)
 
     fprintf (Log_File, "\nStack_t (%s) [%p]\n\n", error, pointer);
 
+    fprintf (Log_File, "Hash is %lld\n\n", pointer->hash_value_);
+
     fprintf (Log_File, "Canary in the begin of structure: %llx\n", pointer->canary_begin_);
-    fprintf (Log_File, "Canary in the end of structure  : %llx\n\n", pointer->canary_end_);
+    fprintf (Log_File, "                  Pointer to her: [%p]\n\n", &(pointer->canary_begin_));
+
+    fprintf (Log_File, "Canary in the end of structure: %llx\n", pointer->canary_end_);
+    fprintf (Log_File, "                Pointer to her: [%p]\n\n", &(pointer->canary_end_));
 
     fprintf (Log_File, "Canary before data[]: %llx\n", *((unsigned long long*) ((char*) pointer->data_ - sizeof (unsigned long long)) ));
-    fprintf (Log_File, "Canary after data[] : %llx\n\n",*((unsigned long long*) (pointer->data_ + pointer->capacity_)));
+    fprintf (Log_File, "      Pointer to her: [%p]\n\n", (unsigned long long*) ((char*) pointer->data_ - sizeof (unsigned long long)));
+
+    fprintf (Log_File, "Canary after data[] : %llx\n",*((unsigned long long*) (pointer->data_ + pointer->capacity_)));
+    fprintf (Log_File, "      Pointer to her: [%p]\n\n\n", (unsigned long long*) (pointer->data_ + pointer->capacity_));
 
     fprintf (Log_File, "size     = %u\n", pointer->size_);
     fprintf (Log_File, "capacity = %u\n", pointer->capacity_);
@@ -193,6 +212,45 @@ error_t Stack_Dump (Stack_t* pointer)
 }
 
 
+long long int HashCounter (void* pointer_begin, void* pointer_end)
+{
+    long long int hash_value = 0;
+
+    for (size_t i = 0; i < (char*) pointer_end -  (char*) pointer_begin; i++)
+    {
+        char byte_value = *((char*) pointer_begin + i);
+        char temp_1 = byte_value << 1;
+        char temp_2 = byte_value >> 7;
+        hash_value += (temp_1 | temp_2) * byte_value;
+    }
+
+    return hash_value;
+}
+
+
+void HashUpdate (Stack_t* pointer)
+{
+    pointer->hash_value_ = 0;
+
+    long long int hash_struct = HashCounter (pointer, (char*) pointer + sizeof(Stack_t));
+    long long int hash_data   = HashCounter (pointer->data_, pointer->data_ + pointer->capacity_);
+
+    pointer->hash_value_ = hash_struct + hash_data;
+}
+
+error_t HashCheck (Stack_t* pointer)
+{
+    long long saved_hash = pointer->hash_value_;
+
+    pointer->hash_value_ = 0;
+
+    long long int hash_struct = HashCounter (pointer, (char*) pointer + sizeof(Stack_t));
+    long long int hash_data   = HashCounter (pointer->data_, pointer->data_ + pointer->capacity_);
+
+    pointer->hash_value_ = saved_hash;
+
+    return pointer->hash_value_ == hash_struct + hash_data ? (OK) : (HASH_INCORRECT);
+}
 
 
 
